@@ -1,5 +1,8 @@
 package com.example.careerboostspringai.service;
 
+import com.example.careerboostspringai.dto.ChatDataDto;
+import com.example.careerboostspringai.dto.MessageDto;
+import com.example.careerboostspringai.entity.ChatData;
 import com.example.careerboostspringai.repository.ChatDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

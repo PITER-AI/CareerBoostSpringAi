@@ -39,13 +39,12 @@ public class ChatData {
         @Column(name = "ref", columnDefinition = "TEXT")
         private List<String> ref;
 
-        private String destination;
 
-        public Message(String role, String content, List<String> ref, String destination) {
+        public Message(String role, String content, List<String> ref) {
             this.role = role;
             this.content = content;
             this.ref = ref;
-            this.destination = destination;
+
         }
     }
 }
