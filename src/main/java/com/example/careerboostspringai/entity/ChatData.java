@@ -1,6 +1,7 @@
 package com.example.careerboostspringai.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
