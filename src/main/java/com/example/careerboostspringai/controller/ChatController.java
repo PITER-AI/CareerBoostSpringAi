@@ -9,14 +9,14 @@ import reactor.core.publisher.Mono;
 
 //import static org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS;
 
-@RestController
-public class ChatController {
-
-    @Autowired
-    private LpuService lpuService;
-
-    @PostMapping("/chat")
-    public Mono<String> chat(@RequestBody String userInput) {
-        return lpuService.generateText(userInput);
-    }
-}
+//@RestController
+//public class ChatController {
+//
+//    @Autowired
+//    private LpuService lpuService;
+//
+//    @PostMapping("/chat")
+//    public Mono<String> chat(@RequestBody String userInput) {
+//        return lpuService.generateText(userInput);
+//    }
+//}
