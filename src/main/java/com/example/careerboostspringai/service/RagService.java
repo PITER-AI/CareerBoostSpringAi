@@ -18,41 +18,36 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+
 public class RagService {
-    private final ChatClient ragChatClient;
-    private final ChatClient LGChatClient;
+    private final ChatClient lgChatClient;
 
     public RagOutputDto getRagOutPut(ChatDataDto chatDataDto) {
         try {
-            ChatClient chatClient = LGChatClient;
-
-            // 입력 유효성 검증
             if (chatDataDto.getMessages() == null || chatDataDto.getMessages().isEmpty()) {
                 throw new IllegalArgumentException("Messages cannot be empty");
             }
 
-            List<MessageDto> messages = chatDataDto.getMessages();
-            MessageDto lastMessage = messages.get(messages.size() - 1);
-            String userContent = String.format("question : %s", lastMessage.getContent());
+            MessageDto lastMessage = chatDataDto.getMessages().get(chatDataDto.getMessages().size() - 1);
+            List<Message> chatHistory = convertToChatHistory(chatDataDto.getMessages());
+            chatHistory.remove(chatHistory.size() - 1);
 
-            // 채팅 히스토리 변환
-            List<Message> chatHistory = convertToChatHistory(messages);
-            chatHistory.remove(chatHistory.size() - 1); // 마지막 메시지 제거
+            ChatResponse chatResponse = lgChatClient
+                    .prompt()
+                    .messages(chatHistory)
+                    .user(lastMessage.getContent())
+                    .call()
+                    .chatResponse();
 
-            // ChatClient 호출
-            ChatResponse chatResponse = callChatClient(chatClient, chatHistory, userContent);
-
-            // 문서 참조 처리
-            //List<String> refLists = extractReferences(chatResponse);
-            String content = chatResponse.getResult().getOutput().getContent();
-
-            return new RagOutputDto(content);
-
+            return new RagOutputDto(chatResponse.getResult().getOutput().getContent());
         } catch (Exception e) {
             log.error("Error in RAG service: ", e);
             throw new RagServiceException("Failed to process chat request", e);
         }
     }
+
+    // convertToChatHistory 메서드는 그대로 유지
+
 
     private List<Message> convertToChatHistory(List<MessageDto> messages) {
         return messages.stream()
@@ -69,7 +64,7 @@ public class RagService {
             return chatClient
                     .prompt()
                     .messages(chatHistory)
-                    .user(userContent)
+                    .user(userContent)  // "question: " 프리픽스 제거
                     .call()
                     .chatResponse();
         } catch (Exception e) {

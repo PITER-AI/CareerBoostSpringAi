@@ -3,6 +3,7 @@ package com.example.careerboostspringai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -17,8 +18,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-@Component("lgChatModel")
+@Component
 public class LGChatModel implements ChatModel {
 
     private final String API_URL = "http://localhost:8000";
@@ -26,88 +28,58 @@ public class LGChatModel implements ChatModel {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private String getUserQuestion(Prompt prompt) {
+        return prompt.getInstructions().stream()
+                .filter(message -> !message.getContent().contains("You are PITER"))
+                .map(message -> message.getContent())
+                .filter(content -> !content.isEmpty())
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No valid question found"));
+    }
+
     @Override
     public ChatResponse call(Prompt prompt) {
-        // 메시지 내용을 하나의 문자열로 결합
-        StringBuilder inputsBuilder = new StringBuilder();
-        for (var instruction : prompt.getInstructions()) {
-            inputsBuilder.append(instruction.getContent()).append(" ");
-        }
-        String inputs = inputsBuilder.toString().trim();
+        // 마지막 사용자 메시지만 추출
+        String userQuestion = getUserQuestion(prompt);
 
         // 요청 생성
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("max_new_tokens", 124);
+        parameters.put("max_new_tokens", 256);
         parameters.put("temperature", 0.7);
         parameters.put("stream", false);
-        parameters.put("do_sample", false);
+        parameters.put("do_sample", true);
         parameters.put("top_p", 0.9);
         parameters.put("top_k", 50);
         parameters.put("repetition_penalty", 1.2);
-        parameters.put("stop", Arrays.asList("\n", ".", ".\n"));
+        parameters.put("stop", Arrays.asList("</s>", "\n\n"));
 
         Map<String, Object> request = new HashMap<>();
-        request.put("inputs", inputs);
+        request.put("inputs", "질문: " + userQuestion + "\n답변:");
         request.put("parameters", parameters);
 
-        String requestBody;
         try {
-            requestBody = objectMapper.writeValueAsString(request);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
+                    API_URL,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+            );
 
-        HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null && !response.getBody().isEmpty()) {
+                String content = (String) response.getBody().get(0).get("generated_text");
 
-        // 응답 타입을 List.class로 변경
-//        ResponseEntity<List> response = restTemplate.exchange(
-//                API_URL,
-//                HttpMethod.POST,
-//                entity,
-//                List.class
-//        );
-//
-//        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-//            // 첫 번째 응답 요소를 가져옴
-//            List<?> responseBody = response.getBody();
-//            if (!responseBody.isEmpty()) {
-//                Object firstResponse = responseBody.get(0);
-//
-//                // Map으로 캐스팅하여 처리
-//                if (firstResponse instanceof Map) {
-//                    @SuppressWarnings("unchecked")
-//                    Map<String, Object> responseMap = (Map<String, Object>) firstResponse;
-//                    String content = (String) responseMap.get("generated_text");
-//                    if (content == null) {
-//                        content = "No response generated";
-//                    }
-//                    AssistantMessage assistantMessage = new AssistantMessage(content);
-//                    return ChatResponse.builder()
-//                            .withGenerations(List.of(new Generation(assistantMessage)))
-//                            .build();
-//                }
-//            }
-//        }
-
-        ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                API_URL,
-                HttpMethod.POST,
-                entity,
-                new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-        );
-
-        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-            List<Map<String, Object>> responseBody = response.getBody();
-            if (!responseBody.isEmpty()) {
-                Map<String, Object> firstResponse = responseBody.get(0);
-                String content = (String) firstResponse.get("generated_text");
-
-                // null 체크 및 기본값 설정
-                if (content == null || content.trim().isEmpty()) {
-                    content = "No response generated";
+                if (content != null) {
+                    int answerStart = content.indexOf("답변:");
+                    if (answerStart != -1) {
+                        content = content.substring(answerStart + "답변:".length()).trim();
+                    }
+                    content = content.replaceAll("\\s*\\.\\s*$", "");
+                } else {
+                    content = "죄송합니다. 응답을 생성할 수 없습니다.";
                 }
 
                 AssistantMessage assistantMessage = new AssistantMessage(content);
@@ -115,9 +87,11 @@ public class LGChatModel implements ChatModel {
                         .withGenerations(List.of(new Generation(assistantMessage)))
                         .build();
             }
-        }
 
-        throw new RuntimeException("Failed to get valid response from LG Chat model");
+            throw new RuntimeException("Failed to get valid response from LG Chat model");
+        } catch (Exception e) {
+            throw new RuntimeException("Error calling LG Chat model", e);
+        }
     }
 
     @Override
