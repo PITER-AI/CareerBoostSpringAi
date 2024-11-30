@@ -15,59 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//@Service
-//@RequiredArgsConstructor
-//public class RagService {
-//
-//    private final ChatClient ragChatClient;
-//    private final ChatClient LGChatClient;
-//
-//    public RagOutputDto getRagOutPut(ChatDataDto chatDataDto) {
-//        ChatClient chatClient;
-//
-//        chatClient = LGChatClient;
-//
-//
-//        List<MessageDto> messages = chatDataDto.getMessages();
-//
-//        MessageDto lastMessage = messages.get(messages.size() - 1);
-//
-//        String userContent = String.format("question : %s", lastMessage.getContent());
-//
-//        List<Message> chatHistory = chatDataDto.getMessages().stream()
-//                .map(message ->
-//                        switch (message.getRole()) {
-//                            case "user" -> new UserMessage(message.getContent());
-//                            case "assistant" -> new AssistantMessage(message.getContent());
-//                            default -> throw new IllegalStateException("Unexpected value: " + message.getRole());
-//                        })
-//                .collect(Collectors.toList());
-//
-//        chatHistory.remove(chatHistory.size() - 1);
-//
-//        ChatResponse chatResponse = chatClient
-//                .prompt()
-//                .messages(chatHistory)
-//                .user(userContent)
-//                .call().chatResponse();
-//
-//        List<Document> documents = chatResponse.getMetadata().get(RETRIEVED_DOCUMENTS);
-//
-//        List<String> refLists = documents.stream()
-//                .map(Document::getMetadata)
-//                .sorted((doc1, doc2) -> ((LocalDateTime) doc2.get("date")).compareTo((LocalDateTime) doc1.get("date")))
-//                .map(metadata -> metadata.get("link").toString())
-//                .collect(Collectors.toList());
-//
-//
-//        String content = chatResponse.getResult().getOutput().getContent();
-//
-//        return new RagOutputDto(content, refLists);
-//    }
-//
-//    public static record RagOutputDto(String content, List<String> refLists) {}
-//}
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -130,28 +77,6 @@ public class RagService {
             throw new ChatClientException("Failed to get response from chat client", e);
         }
     }
-
-//    private List<String> extractReferences(ChatResponse chatResponse) {
-//        try {
-//            List<Document> documents = chatResponse.getMetadata().get(RETRIEVED_DOCUMENTS);
-//            if (documents == null) {
-//                return Collections.emptyList();
-//            }
-//
-//            return documents.stream()
-//                    .map(Document::getMetadata)
-//                    .sorted((doc1, doc2) -> {
-//                        LocalDateTime date1 = (LocalDateTime) doc1.get("date");
-//                        LocalDateTime date2 = (LocalDateTime) doc2.get("date");
-//                        return date2.compareTo(date1);
-//                    })
-//                    .map(metadata -> metadata.get("link").toString())
-//                    .collect(Collectors.toList());
-//        } catch (Exception e) {
-//            log.warn("Failed to extract references: ", e);
-//            return Collections.emptyList();
-//        }
-//    }
 
     @Getter
     public static class RagServiceException extends RuntimeException {
