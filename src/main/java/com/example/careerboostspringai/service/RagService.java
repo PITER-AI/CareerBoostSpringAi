@@ -10,15 +10,10 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS;
 
 //@Service
 //@RequiredArgsConstructor
@@ -101,10 +96,10 @@ public class RagService {
             ChatResponse chatResponse = callChatClient(chatClient, chatHistory, userContent);
 
             // 문서 참조 처리
-            List<String> refLists = extractReferences(chatResponse);
+            //List<String> refLists = extractReferences(chatResponse);
             String content = chatResponse.getResult().getOutput().getContent();
 
-            return new RagOutputDto(content, refLists);
+            return new RagOutputDto(content);
 
         } catch (Exception e) {
             log.error("Error in RAG service: ", e);
@@ -136,27 +131,27 @@ public class RagService {
         }
     }
 
-    private List<String> extractReferences(ChatResponse chatResponse) {
-        try {
-            List<Document> documents = chatResponse.getMetadata().get(RETRIEVED_DOCUMENTS);
-            if (documents == null) {
-                return Collections.emptyList();
-            }
-
-            return documents.stream()
-                    .map(Document::getMetadata)
-                    .sorted((doc1, doc2) -> {
-                        LocalDateTime date1 = (LocalDateTime) doc1.get("date");
-                        LocalDateTime date2 = (LocalDateTime) doc2.get("date");
-                        return date2.compareTo(date1);
-                    })
-                    .map(metadata -> metadata.get("link").toString())
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Failed to extract references: ", e);
-            return Collections.emptyList();
-        }
-    }
+//    private List<String> extractReferences(ChatResponse chatResponse) {
+//        try {
+//            List<Document> documents = chatResponse.getMetadata().get(RETRIEVED_DOCUMENTS);
+//            if (documents == null) {
+//                return Collections.emptyList();
+//            }
+//
+//            return documents.stream()
+//                    .map(Document::getMetadata)
+//                    .sorted((doc1, doc2) -> {
+//                        LocalDateTime date1 = (LocalDateTime) doc1.get("date");
+//                        LocalDateTime date2 = (LocalDateTime) doc2.get("date");
+//                        return date2.compareTo(date1);
+//                    })
+//                    .map(metadata -> metadata.get("link").toString())
+//                    .collect(Collectors.toList());
+//        } catch (Exception e) {
+//            log.warn("Failed to extract references: ", e);
+//            return Collections.emptyList();
+//        }
+//    }
 
     @Getter
     public static class RagServiceException extends RuntimeException {
@@ -172,5 +167,5 @@ public class RagService {
         }
     }
 
-    public static record RagOutputDto(String content, List<String> refLists) {}
+    public static record RagOutputDto(String content) {}
 }

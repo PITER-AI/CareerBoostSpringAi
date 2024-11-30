@@ -20,8 +20,8 @@ public class Document {
 
     public Map<String, Object> toSpringMetadata() {
         return Map.of(
-                "author", this.input,
-                "category", this.output
+                "input", this.input,
+                "output", this.output
         );
     }
 

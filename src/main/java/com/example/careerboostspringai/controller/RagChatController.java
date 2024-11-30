@@ -211,10 +211,10 @@ public class RagChatController {
             // RAG 서비스 호출
             var ragOutput = ragService.getRagOutPut(chatDataDto);
             String content = ragOutput.content();
-            List<String> refLists = ragOutput.refLists();
+            //List<String> refLists = ragOutput.refLists();
 
             // 새로운 메시지 생성
-            MessageDto assistantMsg = new MessageDto("assistant", content, refLists);
+            MessageDto assistantMsg = new MessageDto("assistant", content);
 
             // Chat ID 처리
             Long chatId = chatDataDto.getChatId();

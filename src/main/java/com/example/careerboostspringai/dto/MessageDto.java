@@ -15,19 +15,19 @@ import java.util.List;
 public class MessageDto {
     private String role;
     private String content;
-    private List<String> ref;
 
-    public MessageDto(String role, String content, List<String> ref) {
+
+    public MessageDto(String role, String content) {
         this.role = role;
         this.content = content;
-        this.ref = null;
+
     }
 
     public ChatData.Message toEntity() {
-        return new ChatData.Message(role, content, ref);
+        return new ChatData.Message(role, content);
     }
 
     public static MessageDto fromEntity(ChatData.Message message) {
-        return new MessageDto(message.getRole(), message.getContent(), message.getRef());
+        return new MessageDto(message.getRole(), message.getContent());
     }
 }
